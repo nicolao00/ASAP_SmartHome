@@ -20,7 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SMSService {
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Value("${aligo.api-key}")
     private String apiKey;

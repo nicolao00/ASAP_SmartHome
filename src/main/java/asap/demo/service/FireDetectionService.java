@@ -24,7 +24,7 @@ public class FireDetectionService {
     private final FireDetectionEventRepository fireDetectionEventRepository;
     private final SMSService smsService;
     private final AmazonSQSAsync amazonSQSAsync;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Value("${fire-detection.queue.url}")
     private String queueUrl;

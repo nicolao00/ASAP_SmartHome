@@ -4,13 +4,13 @@ import asap.demo.entity.FireDetectionEvent;
 import asap.demo.entity.User;
 import asap.demo.repository.UserRepository;
 import asap.demo.service.SMSService;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.model.Message;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.model.Message;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -21,7 +21,7 @@ public class FireDetectionListener {
     private final UserRepository userRepository;
     private final SMSService smsService;
     private final AmazonSQSAsync amazonSQSAsync;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Value("${fire-detection.queue.url}")
     private String queueUrl;

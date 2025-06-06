@@ -1,86 +1,60 @@
 package asap.demo.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.entity.StringEntity;
+import net.nurigo.sdk.NurigoApp;
+import net.nurigo.sdk.message.model.Message;
+import net.nurigo.sdk.message.request.SingleMessageSendingRequest;
+import net.nurigo.sdk.message.response.SingleMessageSentResponse;
+import net.nurigo.sdk.message.service.DefaultMessageService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
+import jakarta.annotation.PostConstruct;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SMSService {
-    private final CloseableHttpClient httpClient = HttpClients.createDefault();
-    private final ObjectMapper objectMapper;
 
-    @Value("${aligo.api-key}")
-    private String key;
+    @Value("${coolsms.api-key}")
+    private String apiKey;
 
-    @Value("${aligo.user-id}")
-    private String userId;
+    @Value("${coolsms.api-secret}")
+    private String apiSecret;
 
-    @Value("${aligo.sender}")
+    @Value("${coolsms.sender}")
     private String sender;
 
-    public void sendSMS(String phoneNumber, String message) {
+    private DefaultMessageService messageService;
+
+    @PostConstruct
+    public void init() {
+        // 반드시 계정 내 등록된 유효한 API Key, API Secret Key를 입력해주셔야 합니다!
+        this.messageService = NurigoApp.INSTANCE.initialize(apiKey, apiSecret, "https://api.coolsms.co.kr");
+        log.info("CoolSMS messageService initialized with sender: {}", sender);
+    }
+
+    public void sendSMS(String receiver, String text) {
         try {
-            String url = "https://apis.aligo.in/send/";
-            
-            // 파라미터 설정
-            Map<String, String> params = new HashMap<>();
-            params.put("key", key);
-            params.put("user_id", userId);
-            params.put("sender", sender);
-            params.put("receiver", phoneNumber);
-            params.put("msg", message);
-            params.put("msg_type", "SMS");  // 단문 메시지
-            params.put("testmode_yn", "N");  // 테스트 모드 (실제 발송 시 "N"으로 변경)
+            log.info("Attempting to send SMS via CoolSMS to: {}", receiver);
+            Message message = new Message();
+            message.setFrom(sender); // 발신번호
+            message.setTo(receiver); // 수신번호
+            message.setText(text);   // 문자 내용
 
-            // URL 인코딩된 폼 데이터 생성
-            StringBuilder formData = new StringBuilder();
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                if (formData.length() > 0) {
-                    formData.append("&");
-                }
-                formData.append(entry.getKey())
-                       .append("=")
-                       .append(java.net.URLEncoder.encode(entry.getValue(), "UTF-8"));
-            }
+            SingleMessageSentResponse response = this.messageService.sendOne(new SingleMessageSendingRequest(message));
+            log.info("CoolSMS 전송 응답: {}", response);
 
-            // HTTP 요청 설정
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-            httpPost.setEntity(new StringEntity(formData.toString(), "UTF-8"));
-
-            // 요청 실행 및 응답 처리
-            try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                String responseBody = new String(response.getEntity().getContent().readAllBytes());
-                JsonNode jsonResponse = objectMapper.readTree(responseBody);
-
-                int resultCode = jsonResponse.get("result_code").asInt();
-                String resultMessage = jsonResponse.get("message").asText();
-
-                if (resultCode == 1) {
-                    log.info("SMS sent successfully to: {}. Message ID: {}", 
-                            phoneNumber, 
-                            jsonResponse.get("msg_id").asText());
-                } else {
-                    log.error("Failed to send SMS to: {}. Error: {}", phoneNumber, resultMessage);
-                    throw new RuntimeException("Failed to send SMS: " + resultMessage);
-                }
+            if (response != null && response.getStatusCode() != null && response.getStatusCode().startsWith("2")) {
+                log.info("SMS sent successfully to: {}. Message ID: {}", receiver, response.getMessageId());
+            } else {
+                log.error("Failed to send SMS to: {}. Response: {}", receiver, response);
+                throw new RuntimeException("Failed to send SMS. Check logs for response details.");
             }
         } catch (Exception e) {
-            log.error("Failed to send SMS to: {}", phoneNumber, e);
+            log.error("Failed to send SMS to: {}", receiver, e);
             throw new RuntimeException("Failed to send SMS", e);
         }
     }
-} 
+}

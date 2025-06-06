@@ -23,7 +23,10 @@ public class SMSService {
     private final ObjectMapper objectMapper;
 
     @Value("${aligo.api-key}")
-    private String apiKey;
+    private String key;
+
+    @Value("${aligo.user-id}")
+    private String userId;
 
     @Value("${aligo.sender}")
     private String sender;
@@ -34,8 +37,8 @@ public class SMSService {
             
             // 파라미터 설정
             Map<String, String> params = new HashMap<>();
-            params.put("key", apiKey);
-            params.put("user_id", "asap");  // 알리고 계정 아이디
+            params.put("key", key);
+            params.put("user_id", userId);
             params.put("sender", sender);
             params.put("receiver", phoneNumber);
             params.put("msg", message);

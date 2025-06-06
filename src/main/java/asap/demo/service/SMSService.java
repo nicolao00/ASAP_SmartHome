@@ -40,7 +40,7 @@ public class SMSService {
             params.put("receiver", phoneNumber);
             params.put("msg", message);
             params.put("msg_type", "SMS");  // 단문 메시지
-            params.put("testmode_yn", "Y");  // 테스트 모드 (실제 발송 시 "N"으로 변경)
+            params.put("testmode_yn", "N");  // 테스트 모드 (실제 발송 시 "N"으로 변경)
 
             // URL 인코딩된 폼 데이터 생성
             StringBuilder formData = new StringBuilder();

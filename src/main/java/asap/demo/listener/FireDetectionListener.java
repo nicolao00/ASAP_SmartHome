@@ -31,10 +31,15 @@ public class FireDetectionListener {
     @Scheduled(fixedDelay = 5000)
     public void pollFireDetectionQueue() {
         try {
+            log.info("SQS 큐 폴링 시작");
             var messages = amazonSQSAsync.receiveMessage(queueUrl).getMessages();
+            log.info("수신된 메시지 수: {}", messages.size());
+            
             for (Message sqsMessage : messages) {
+                log.info("메시지 내용: {}", sqsMessage.getBody());
                 processFireDetection(sqsMessage.getBody());
                 amazonSQSAsync.deleteMessage(queueUrl, sqsMessage.getReceiptHandle());
+                log.info("메시지 처리 및 삭제 완료");
             }
         } catch (Exception e) {
             log.error("SQS 큐 폴링 중 오류", e);

@@ -8,9 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import org.springframework.beans.factory.annotation.Value;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,11 +20,6 @@ public class FireDetectionService {
     private final UserRepository userRepository;
     private final FireDetectionEventRepository fireDetectionEventRepository;
     private final SMSService smsService;
-    private final AmazonSQSAsync amazonSQSAsync;
-    private final ObjectMapper objectMapper;
-
-    @Value("${fire-detection.queue.url}")
-    private String queueUrl;
 
     @Transactional
     public void handleFireDetection() {
@@ -38,14 +30,8 @@ public class FireDetectionService {
         event.setDetectedAt(LocalDateTime.now());
         fireDetectionEventRepository.save(event);
         
-        try {
-            String message = objectMapper.writeValueAsString(event);
-            amazonSQSAsync.sendMessage(queueUrl, message);
-            log.info("화재 감지 이벤트를 SQS 큐에 전송 완료");
-        } catch (Exception e) {
-            log.error("SQS 큐 전송 실패", e);
-            throw new RuntimeException("SQS 큐 전송 실패", e);
-        }
+        log.info("화재 감지 이벤트가 발생했습니다. 감지 시간: {}", 
+            event.getDetectedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         
         log.info("화재 감지 이벤트 처리 완료");
     }
